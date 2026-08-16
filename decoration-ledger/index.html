@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="装修账簿">
+<meta name="theme-color" content="#1a1209">
+<title>装修账簿</title>
+<style>
+/* 全部使用系统字体，无外链，离线可用 */
+:root {
+  --ink:    #1a1209;
+  --ink2:   #3d2f1e;
+  --ink3:   #7a6a58;
+  --ink4:   #bfb09e;
+  --paper:  #f7f3ed;
+  --paper2: #ede8df;
+  --paper3: #e0d8cc;
+  --gold:   #b87333;
+  --gold2:  #d4a055;
+  --gold3:  #f0c878;
+  --red:    #c0392b;
+  --green:  #2e7d52;
+  --safe-t: env(safe-area-inset-top, 44px);
+  --safe-b: env(safe-area-inset-bottom, 20px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{
+  height:100%;min-height:100%;
+  background:var(--paper);color:var(--ink);
+  font-family:-apple-system,'PingFang SC','Helvetica Neue',sans-serif;
+  overscroll-behavior:none;-webkit-overflow-scrolling:touch;
+}
+
+/* ── 顶栏 ── */
+.topbar{
+  position:sticky;top:0;z-index:100;
+  background:var(--ink);
+  padding:calc(var(--safe-t) + 10px) 18px 14px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.topbar-title{font-size:17px;font-weight:700;color:var(--gold2);letter-spacing:2px}
+.topbar-sub{font-size:11px;color:var(--ink4);margin-top:2px}
+.icon-btn{
+  width:36px;height:36px;border-radius:50%;
+  background:rgba(255,255,255,0.09);border:none;
+  color:var(--gold3);font-size:20px;line-height:36px;text-align:center;
+  cursor:pointer;flex-shrink:0;
+}
+.icon-btn:active{background:rgba(255,255,255,0.2)}
+
+/* ── 汇总卡片 ── */
+.summary-wrap{background:var(--ink);padding:0 14px 16px}
+.summary-cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+.s-card{
+  background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);
+  border-radius:12px;padding:11px 8px;text-align:center;
+}
+.s-lbl{font-size:10px;color:var(--ink4);letter-spacing:.5px;margin-bottom:3px}
+.s-val{font-size:16px;font-weight:700;color:#fff}
+.s-val.green{color:#5dd98a}.s-val.amber{color:var(--gold3)}.s-val.gray{color:var(--ink4)}
+
+/* ── 分类彩带 ── */
+.cat-strip{
+  background:var(--ink);padding:0 14px 14px;
+  display:flex;gap:7px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+}
+.cat-strip::-webkit-scrollbar{display:none}
+.cat-chip{
+  flex-shrink:0;padding:6px 13px;border-radius:100px;
+  border:1px solid rgba(255,255,255,0.15);background:transparent;
+  color:var(--ink4);font-size:12px;cursor:pointer;white-space:nowrap;
+}
+.cat-chip.active{background:var(--gold);border-color:var(--gold);color:#fff;font-weight:600}
+
+/* ── 筛选栏 ── */
+.filter-bar{padding:10px 14px 6px;display:flex;gap:8px;align-items:center}
+.search-box{
+  flex:1;display:flex;align-items:center;
+  background:var(--paper2);border-radius:10px;padding:0 10px;gap:5px;
+}
+.search-box input{
+  flex:1;border:none;background:transparent;font-size:14px;
+  color:var(--ink);padding:9px 0;outline:none;
+}
+.search-box input::placeholder{color:var(--ink4)}
+.search-icon{color:var(--ink4);font-size:14px}
+.status-seg{display:flex;background:var(--paper2);border-radius:10px;padding:3px}
+.status-seg button{
+  padding:5px 9px;border:none;background:transparent;
+  font-size:11px;color:var(--ink3);border-radius:7px;cursor:pointer;white-space:nowrap;
+}
+.status-seg button.active{background:var(--ink);color:#fff;font-weight:600}
+
+/* ── 账目列表 ── */
+.list-wrap{padding:4px 14px calc(var(--safe-b) + 82px);display:flex;flex-direction:column}
+.month-header{
+  font-size:11px;color:var(--ink3);font-weight:600;letter-spacing:1px;
+  padding:13px 3px 5px;display:flex;align-items:center;gap:7px;
+}
+.month-header::after{content:'';flex:1;height:1px;background:var(--paper3)}
+
+.entry-card{
+  background:#fff;border-radius:13px;margin-bottom:9px;overflow:hidden;
+  box-shadow:0 1px 5px rgba(26,18,9,0.07);
+}
+.entry-card:active{opacity:.9}
+.entry-card-inner{display:flex;align-items:stretch}
+.entry-stripe{width:4px;flex-shrink:0}
+.entry-body{flex:1;padding:12px 13px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.entry-row1{display:flex;justify-content:space-between;align-items:flex-start;gap:6px}
+.entry-name{font-size:14px;font-weight:600;color:var(--ink);flex:1;line-height:1.3;word-break:break-all}
+.entry-amount{font-size:16px;font-weight:700;color:var(--gold);white-space:nowrap;flex-shrink:0}
+.entry-row2{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.entry-vendor{font-size:11px;color:var(--ink3)}
+.chip{font-size:10px;padding:2px 7px;border-radius:100px;background:var(--paper2);color:var(--ink3);white-space:nowrap}
+.chip.sp{background:#d1fae5;color:var(--green);font-weight:600}
+.chip.pp{background:#fef3c7;color:#92400e;font-weight:600}
+.chip.up{background:#f3f4f6;color:var(--ink3);font-weight:600}
+
+/* 展开操作区（用高度动画代替max-width，iOS更流畅） */
+.entry-actions{
+  display:flex;flex-direction:column;justify-content:center;align-items:stretch;
+  width:0;overflow:hidden;transition:width .22s ease;flex-shrink:0;
+}
+.entry-card.swiped .entry-actions{width:110px}
+.act-btn{
+  flex:1;border:none;font-size:12px;font-weight:600;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:3px;
+}
+.act-edit{background:var(--paper3);color:var(--ink2)}
+.act-del{background:#fee2e2;color:var(--red)}
+
+/* ── 空状态 ── */
+.empty-state{text-align:center;padding:55px 20px;color:var(--ink4)}
+.empty-state .ei{font-size:44px;margin-bottom:12px}
+.empty-state p{font-size:14px;color:var(--ink3);margin-bottom:6px}
+
+/* ── FAB ── */
+.fab{
+  position:fixed;right:18px;bottom:calc(var(--safe-b) + 68px);
+  width:54px;height:54px;border-radius:50%;border:none;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  color:#fff;font-size:28px;line-height:54px;text-align:center;
+  box-shadow:0 4px 18px rgba(184,115,51,.5);cursor:pointer;z-index:200;
+}
+.fab:active{transform:scale(.92)}
+
+/* ── 底部导航 ── */
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:150;
+  background:rgba(247,243,237,.94);backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);border-top:1px solid var(--paper3);
+  display:flex;padding-bottom:var(--safe-b);
+}
+.nav-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  padding:9px 0 7px;gap:2px;border:none;background:transparent;
+  color:var(--ink3);font-size:10px;cursor:pointer;
+}
+.nav-item.active{color:var(--gold)}
+.nav-icon{font-size:21px;line-height:1}
+
+/* ── 统计页 ── */
+.stats-wrap{padding:14px 14px calc(var(--safe-b) + 82px);display:flex;flex-direction:column;gap:14px}
+.stat-card{background:#fff;border-radius:14px;padding:16px 14px;box-shadow:0 1px 5px rgba(26,18,9,0.07)}
+.stat-card-title{font-size:11px;font-weight:600;color:var(--ink3);letter-spacing:.5px;margin-bottom:13px}
+.cat-bar-row{margin-bottom:11px}
+.cat-bar-row:last-child{margin-bottom:0}
+.cat-bar-label{display:flex;justify-content:space-between;margin-bottom:4px;font-size:13px}
+.cat-bar-label .cl{color:var(--ink)}.cat-bar-label .cv{font-weight:600;color:var(--gold)}
+.bar-track{background:var(--paper2);border-radius:100px;height:6px;overflow:hidden}
+.bar-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--gold),var(--gold3))}
+.month-chart-inner{display:flex;align-items:flex-end;gap:5px;height:100px;margin-top:8px}
+.month-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px}
+.m-bar{width:100%;border-radius:5px 5px 0 0;min-height:4px;background:linear-gradient(180deg,var(--gold2),var(--gold))}
+.m-lbl{font-size:9px;color:var(--ink3)}.m-amt{font-size:8px;color:var(--ink4)}
+.pay-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--paper2)}
+.pay-row:last-child{border-bottom:none}
+.pay-name{font-size:13px;color:var(--ink)}.pay-amt{font-size:13px;font-weight:600;color:var(--gold);text-align:right}
+.pay-pct{font-size:10px;color:var(--ink3);text-align:right}
+.big-total{font-size:32px;font-weight:800;color:var(--gold);letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.big-total-lbl{font-size:11px;color:var(--ink4);letter-spacing:.5px;margin-top:2px}
+
+/* ── 数据管理页 ── */
+.data-page-wrap{padding:14px 14px calc(var(--safe-b) + 82px)}
+.data-section-title{font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:1px;margin:15px 0 9px;text-transform:uppercase}
+.data-info-box{background:#fff;border-radius:13px;padding:14px;box-shadow:0 1px 5px rgba(26,18,9,.06);margin-bottom:10px}
+.data-info-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--paper2);font-size:13px}
+.data-info-row:last-child{border-bottom:none}
+.data-info-row .k{color:var(--ink3)}.data-info-row .v{font-weight:600;color:var(--ink)}
+.io-btn{
+  width:100%;padding:14px;border-radius:13px;border:none;
+  font-size:15px;font-weight:600;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:1px;
+}
+.io-btn:active{opacity:.8}
+.io-btn.primary{background:var(--gold);color:#fff}
+.io-btn.secondary{background:var(--paper2);color:var(--ink2)}
+.io-btn.danger{background:#fee2e2;color:var(--red)}
+.io-info{font-size:12px;color:var(--ink3);padding:7px 4px 4px;line-height:1.6}
+
+/* ── Sheet（底部弹出表单）── */
+.sheet-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(26,18,9,.55);z-index:300;
+}
+.sheet-overlay.open{display:flex;align-items:flex-end;justify-content:center}
+.sheet{
+  background:var(--paper);width:100%;max-width:600px;
+  border-radius:22px 22px 0 0;
+  padding:0 18px calc(var(--safe-b) + 22px);
+  max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  transform:translateY(100%);
+  animation:slideUp .3s cubic-bezier(.34,1.4,.64,1) forwards;
+}
+@keyframes slideUp{to{transform:translateY(0)}}
+.sheet-handle{width:34px;height:4px;border-radius:2px;background:var(--paper3);margin:13px auto 18px}
+.sheet-title{font-size:17px;font-weight:700;color:var(--ink);margin-bottom:18px}
+.field-label{font-size:12px;font-weight:600;color:var(--ink3);letter-spacing:.3px;margin-bottom:5px;display:block}
+.field-group{margin-bottom:12px}
+.field-input,.field-select{
+  width:100%;padding:12px 13px;border:1.5px solid var(--paper3);
+  border-radius:11px;font-size:15px;color:var(--ink);background:#fff;outline:none;
+  -webkit-appearance:none;appearance:none;
+}
+.field-input:focus,.field-select:focus{border-color:var(--gold)}
+.field-row{display:flex;gap:9px}
+.field-row .field-group{flex:1}
+.sheet-actions{display:flex;gap:9px;margin-top:18px}
+.btn-confirm{
+  flex:1;padding:14px;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  color:#fff;border:none;border-radius:13px;font-size:15px;font-weight:700;cursor:pointer;
+}
+.btn-confirm:active{opacity:.85}
+.btn-dismiss{
+  padding:14px 18px;background:var(--paper2);color:var(--ink2);
+  border:none;border-radius:13px;font-size:15px;cursor:pointer;
+}
+
+/* ── 自定义 confirm ── */
+.confirm-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(26,18,9,.55);z-index:500;
+  align-items:center;justify-content:center;padding:20px;
+}
+.confirm-overlay.open{display:flex}
+.confirm-box{
+  background:#fff;border-radius:18px;padding:24px 20px;max-width:320px;width:100%;
+  text-align:center;box-shadow:0 10px 40px rgba(26,18,9,.2);
+}
+.confirm-msg{font-size:15px;color:var(--ink);line-height:1.6;margin-bottom:20px;white-space:pre-wrap}
+.confirm-btns{display:flex;gap:10px}
+.confirm-cancel{flex:1;padding:12px;border:none;background:var(--paper2);color:var(--ink2);border-radius:11px;font-size:15px;cursor:pointer}
+.confirm-ok{flex:1;padding:12px;border:none;background:var(--gold);color:#fff;border-radius:11px;font-size:15px;font-weight:700;cursor:pointer}
+.confirm-ok.danger-ok{background:var(--red)}
+
+/* ── Toast ── */
+.toast{
+  position:fixed;top:calc(var(--safe-t) + 55px);
+  left:50%;transform:translateX(-50%) translateY(-16px);
+  background:var(--ink);color:#fff;padding:10px 22px;border-radius:100px;
+  font-size:13px;font-weight:600;z-index:999;pointer-events:none;
+  opacity:0;transition:opacity .22s,transform .22s;white-space:nowrap;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── 导出预览弹窗 ── */
+.export-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(26,18,9,.6);z-index:400;
+  align-items:flex-end;justify-content:center;
+}
+.export-overlay.open{display:flex}
+.export-box{
+  background:#fff;width:100%;max-width:600px;
+  border-radius:22px 22px 0 0;
+  padding:18px 18px calc(var(--safe-b) + 20px);
+  max-height:70vh;display:flex;flex-direction:column;
+}
+.export-title{font-size:15px;font-weight:700;color:var(--ink);margin-bottom:12px}
+.export-hint{font-size:12px;color:var(--ink3);margin-bottom:10px;line-height:1.6}
+.export-textarea{
+  flex:1;border:1.5px solid var(--paper3);border-radius:11px;
+  padding:11px 12px;font-size:11px;font-family:monospace;color:var(--ink2);
+  background:var(--paper);resize:none;outline:none;
+  -webkit-user-select:all;user-select:all;overflow:auto;
+}
+.export-actions{display:flex;gap:9px;margin-top:12px}
+.export-copy{flex:1;padding:13px;background:var(--gold);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer}
+.export-close{padding:13px 18px;background:var(--paper2);color:var(--ink2);border:none;border-radius:12px;font-size:14px;cursor:pointer}
+
+/* ── 页面显示控制 ── */
+.page{display:none}.page.active{display:block}
+
+/* 分类色条 */
+.s-主工程{background:#b5420a}.s-主材{background:#b87333}.s-家具{background:#7b5ea7}
+.s-家电{background:#2563eb}.s-软装{background:#059669}.s-管理费{background:#dc2626}
+.s-设计费{background:#0891b2}.s-其他{background:#9ca3af}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- 自定义 confirm -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-msg" id="confirm-msg"></div>
+    <div class="confirm-btns">
+      <button class="confirm-cancel" id="confirm-cancel">取消</button>
+      <button class="confirm-ok" id="confirm-ok">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- 导出预览弹窗 -->
+<div class="export-overlay" id="export-overlay">
+  <div class="export-box">
+    <div class="export-title">📤 导出备份</div>
+    <div class="export-hint">长按下方文本全选 → 复制 → 粘贴到备忘录或邮件保存。<br>或点「复制全部」一键复制。</div>
+    <textarea class="export-textarea" id="export-textarea" readonly></textarea>
+    <div class="export-actions">
+      <button class="export-copy" onclick="copyExport()">复制全部</button>
+      <button class="export-close" onclick="closeExport()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 页面1：账目列表 ══ -->
+<div class="page active" id="page-list">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">🏠 装修账簿</div>
+      <div class="topbar-sub" id="topbar-sub">加载中…</div>
+    </div>
+    <button class="icon-btn" onclick="openAdd()">＋</button>
+  </div>
+  <div class="summary-wrap">
+    <div class="summary-cards" id="summary-cards"></div>
+  </div>
+  <div class="cat-strip" id="cat-strip"></div>
+  <div class="filter-bar">
+    <div class="search-box">
+      <span class="search-icon">⌕</span>
+      <input type="search" id="search-input" placeholder="搜索名称、商家…" oninput="renderList()">
+    </div>
+    <div class="status-seg" id="status-seg">
+      <button class="active" data-s="" onclick="setStatus(this)">全部</button>
+      <button data-s="已付" onclick="setStatus(this)">已付</button>
+      <button data-s="部分付" onclick="setStatus(this)">部分</button>
+      <button data-s="未付" onclick="setStatus(this)">未付</button>
+    </div>
+  </div>
+  <div class="list-wrap" id="list-wrap"></div>
+</div>
+
+<!-- ══ 页面2：统计 ══ -->
+<div class="page" id="page-stats">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">📊 统计分析</div>
+      <div class="topbar-sub" id="stats-sub"></div>
+    </div>
+  </div>
+  <div class="stats-wrap" id="stats-wrap"></div>
+</div>
+
+<!-- ══ 页面3：数据管理 ══ -->
+<div class="page" id="page-data">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">💾 数据管理</div>
+      <div class="topbar-sub">备份 · 恢复 · 清空</div>
+    </div>
+  </div>
+  <div class="data-page-wrap" id="data-page-wrap"></div>
+</div>
+
+<button class="fab" id="fab" onclick="openAdd()">＋</button>
+
+<nav class="bottom-nav">
+  <button class="nav-item active" data-page="page-list" onclick="switchPage(this)">
+    <span class="nav-icon">📋</span>账目
+  </button>
+  <button class="nav-item" data-page="page-stats" onclick="switchPage(this)">
+    <span class="nav-icon">📊</span>统计
+  </button>
+  <button class="nav-item" data-page="page-data" onclick="switchPage(this)">
+    <span class="nav-icon">💾</span>数据
+  </button>
+</nav>
+
+<!-- 记账 Sheet -->
+<div class="sheet-overlay" id="sheet-overlay">
+  <div class="sheet" id="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="sheet-title">记一笔</div>
+    <input type="hidden" id="edit-id">
+    <div class="field-group">
+      <label class="field-label">项目名称 *</label>
+      <input class="field-input" type="text" id="f-name" placeholder="如：水电改造" autocomplete="off">
+    </div>
+    <div class="field-row">
+      <div class="field-group">
+        <label class="field-label">金额（元）*</label>
+        <input class="field-input" type="number" id="f-amount" placeholder="0.00" step="0.01" inputmode="decimal">
+      </div>
+      <div class="field-group">
+        <label class="field-label">日期 *</label>
+        <input class="field-input" type="date" id="f-date">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field-group">
+        <label class="field-label">费用类别</label>
+        <select class="field-select" id="f-cat">
+          <option>主工程</option><option>主材</option><option>家具</option>
+          <option>家电</option><option>软装</option><option>管理费</option>
+          <option>设计费</option><option>其他</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label">付款状态</label>
+        <select class="field-select" id="f-status">
+          <option value="已付">✓ 已付清</option>
+          <option value="部分付">◑ 部分已付</option>
+          <option value="未付">○ 待付款</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field-group">
+        <label class="field-label">付款方式</label>
+        <select class="field-select" id="f-pay">
+          <option>微信支付</option><option>支付宝</option>
+          <option>银行转账</option><option>刷卡</option><option>现金</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label">商家（选填）</label>
+        <input class="field-input" type="text" id="f-vendor" placeholder="" autocomplete="off">
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">备注（选填）</label>
+      <input class="field-input" type="text" id="f-note" placeholder="" autocomplete="off">
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-dismiss" onclick="closeSheet()">取消</button>
+      <button class="btn-confirm" onclick="saveEntry()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════
+//  存储层：优先 localStorage，降级内存
+// ════════════════════════════════
+const STORE_KEY = 'deco_ledger_v3';
+let _memStore = null; // 内存降级存储
+
+function _lsAvail() {
+  try { localStorage.setItem('__t','1'); localStorage.removeItem('__t'); return true; }
+  catch(e) { return false; }
+}
+const USE_LS = _lsAvail();
+
+function getData() {
+  try {
+    if (USE_LS) {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (raw) return JSON.parse(raw);
+    } else if (_memStore) {
+      return JSON.parse(JSON.stringify(_memStore));
+    }
+  } catch(e) {}
+  // 首次：写入历史种子数据
+  const seed = JSON.parse(JSON.stringify(SEED));
+  saveData(seed);
+  return seed;
+}
+
+function saveData(data) {
+  try {
+    if (USE_LS) {
+      localStorage.setItem(STORE_KEY, JSON.stringify(data));
+    } else {
+      _memStore = JSON.parse(JSON.stringify(data));
+    }
+  } catch(e) {}
+}
+
+// ════════════════════════════════
+//  历史种子数据（14条）
+// ════════════════════════════════
+const SEED = [
+  {id:"1785939021025",name:"门禁面板移位+光纤重置",amount:600,date:"2026-08-02",cat:"主工程",payMethod:"微信支付",vendor:"",status:"已付",note:""},
+  {id:"1785938945930",name:"拆旧施工（14000-1500回收）",amount:12500,date:"2026-07-01",cat:"主工程",payMethod:"微信支付",vendor:"",status:"已付",note:""},
+  {id:"1785938604791",name:"toto浴缸（右裙边）",amount:3137,date:"2026-08-05",cat:"主材",payMethod:"支付宝",vendor:"淘宝TOTO江苏总仓直发",status:"已付",note:""},
+  {id:"1785435649513",name:"凯龙复古支架洗手盆（加高支架）",amount:1848,date:"2026-07-27",cat:"主材",payMethod:"支付宝",vendor:"淘宝凯龙家居卫浴",status:"已付",note:""},
+  {id:"1785264926684",name:"Vidar地板",amount:14260,date:"2026-07-06",cat:"主材",payMethod:"银行转账",vendor:"",status:"部分付",note:""},
+  {id:"1785264829401",name:"工程款",amount:40000,date:"2026-07-28",cat:"主工程",payMethod:"银行转账",vendor:"",status:"部分付",note:""},
+  {id:"1785264573418",name:"科勒3854T复古纽英伦马桶",amount:2226.04,date:"2026-07-26",cat:"主材",payMethod:"支付宝",vendor:"",status:"已付",note:""},
+  {id:"1785264499882",name:"科勒3451T梅玛连体坐便器4.8升马桶",amount:2921.97,date:"2026-07-26",cat:"主材",payMethod:"支付宝",vendor:"",status:"已付",note:""},
+  {id:"1785264422478",name:"ASKO极光2.0嵌入式16套进口洗碗机",amount:11770,date:"2026-03-15",cat:"家电",payMethod:"支付宝",vendor:"天猫",status:"已付",note:""},
+  {id:"1785263200545",name:"老板小环翼C5排油烟机",amount:4328.98,date:"2026-07-18",cat:"家电",payMethod:"微信支付",vendor:"",status:"已付",note:""},
+  {id:"1785263093011",name:"老板不锈钢燃气灶JZT-5G2A5",amount:1871.49,date:"2026-07-18",cat:"家电",payMethod:"微信支付",vendor:"",status:"已付",note:""},
+  {id:"1785262904406",name:"东芝6匹一拖四进口中央空调",amount:44461,date:"2026-03-15",cat:"家电",payMethod:"刷卡",vendor:"",status:"已付",note:""},
+  {id:"1785259676933",name:"设计费余款",amount:9920,date:"2026-01-27",cat:"设计费",payMethod:"微信支付",vendor:"",status:"已付",note:""},
+  {id:"1785259640737",name:"设计费订金",amount:8000,date:"2026-01-10",cat:"设计费",payMethod:"微信支付",vendor:"",status:"部分付",note:""}
+];
+
+// ════════════════════════════════
+//  格式化
+// ════════════════════════════════
+const CATS = ['全部','主工程','主材','家具','家电','软装','管理费','设计费','其他'];
+const CAT_COLORS = {
+  主工程:'#b5420a',主材:'#b87333',家具:'#7b5ea7',家电:'#2563eb',
+  软装:'#059669',管理费:'#dc2626',设计费:'#0891b2',其他:'#9ca3af'
+};
+
+function fmtAmt(n){
+  return '¥'+Number(n).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fmtShort(n){
+  if(n>=10000) return '¥'+(n/10000).toFixed(1)+'万';
+  if(n>=1000)  return '¥'+(n/1000).toFixed(1)+'k';
+  return '¥'+Math.round(n);
+}
+
+// ════════════════════════════════
+//  自定义 confirm（代替原生 confirm，iOS WKWebView 安全）
+// ════════════════════════════════
+function myConfirm(msg, isDanger) {
+  return new Promise(resolve => {
+    document.getElementById('confirm-msg').textContent = msg;
+    const okBtn = document.getElementById('confirm-ok');
+    okBtn.className = 'confirm-ok' + (isDanger ? ' danger-ok' : '');
+    document.getElementById('confirm-overlay').classList.add('open');
+    function cleanup() {
+      document.getElementById('confirm-overlay').classList.remove('open');
+      okBtn.onclick = null;
+      document.getElementById('confirm-cancel').onclick = null;
+    }
+    okBtn.onclick = () => { cleanup(); resolve(true); };
+    document.getElementById('confirm-cancel').onclick = () => { cleanup(); resolve(false); };
+  });
+}
+
+// ════════════════════════════════
+//  状态变量
+// ════════════════════════════════
+let activeCat = '全部';
+let activeStatus = '';
+let swipedCard = null;
+
+// ════════════════════════════════
+//  渲染：汇总卡片
+// ════════════════════════════════
+function renderSummary() {
+  const data = getData();
+  const total = data.reduce((s,e)=>s+Number(e.amount),0);
+  const paid  = data.filter(e=>e.status==='已付').reduce((s,e)=>s+Number(e.amount),0);
+  const pend  = total - paid;
+  document.getElementById('topbar-sub').textContent =
+    data.length + ' 条 · 总计 ' + fmtShort(total);
+  document.getElementById('summary-cards').innerHTML =
+    '<div class="s-card"><div class="s-lbl">总支出</div><div class="s-val">'+fmtShort(total)+'</div></div>'+
+    '<div class="s-card"><div class="s-lbl">已付清</div><div class="s-val green">'+fmtShort(paid)+'</div></div>'+
+    '<div class="s-card"><div class="s-lbl">待结清</div><div class="s-val amber">'+fmtShort(pend)+'</div></div>';
+}
+
+// ════════════════════════════════
+//  渲染：分类彩带
+// ════════════════════════════════
+function renderCatStrip() {
+  document.getElementById('cat-strip').innerHTML = CATS.map(c=>
+    '<button class="cat-chip'+(activeCat===c?' active':'')+'" onclick="setCat(\''+c+'\')">'+c+'</button>'
+  ).join('');
+}
+function setCat(c){ activeCat=c; renderCatStrip(); renderList(); }
+
+// ════════════════════════════════
+//  渲染：账目列表
+// ════════════════════════════════
+function renderList() {
+  const data = getData();
+  const q = (document.getElementById('search-input').value||'').toLowerCase();
+  let filtered = data.filter(e=>{
+    return (activeCat==='全部'||e.cat===activeCat)
+      && (!activeStatus||e.status===activeStatus)
+      && (!q||(e.name.toLowerCase().includes(q)||(e.vendor||'').toLowerCase().includes(q)));
+  });
+  filtered.sort((a,b)=>b.date.localeCompare(a.date));
+  const wrap = document.getElementById('list-wrap');
+  if(!filtered.length){
+    wrap.innerHTML='<div class="empty-state"><div class="ei">🔍</div><p>没有找到匹配的账目</p><small>试试清除筛选条件</small></div>';
+    return;
+  }
+  const groups={};
+  filtered.forEach(e=>{ const m=e.date.substring(0,7); if(!groups[m])groups[m]=[]; groups[m].push(e); });
+  const months=Object.keys(groups).sort().reverse();
+  wrap.innerHTML = months.map(m=>{
+    const mTotal=groups[m].reduce((s,e)=>s+Number(e.amount),0);
+    const lbl=m.replace('2026-','').replace(/^(\d+)-(\d+)$/,'$1月');
+    return '<div class="month-header">'+lbl+
+      '<span style="color:var(--gold);font-size:10px;margin-left:4px">'+fmtShort(mTotal)+'</span></div>'+
+      groups[m].map(e=>makeCard(e)).join('');
+  }).join('');
+}
+
+function makeCard(e){
+  const sc = e.status==='已付'?'sp':e.status==='部分付'?'pp':'up';
+  const sl = e.status==='已付'?'✓已付':e.status==='部分付'?'◑部分':'○待付';
+  return '<div class="entry-card" id="c-'+e.id+'" onclick="cardClick(event,\''+e.id+'\')">'+
+    '<div class="entry-card-inner">'+
+    '<div class="entry-stripe s-'+e.cat+'"></div>'+
+    '<div class="entry-body">'+
+    '<div class="entry-row1"><div class="entry-name">'+esc(e.name)+'</div><div class="entry-amount">'+fmtAmt(e.amount)+'</div></div>'+
+    (e.vendor?'<div class="entry-vendor">🏪 '+esc(e.vendor)+'</div>':'')+
+    '<div class="entry-row2">'+
+    '<span class="chip">'+e.cat+'</span>'+
+    '<span class="chip">'+e.date.replace('2026-','')+'</span>'+
+    '<span class="chip">'+e.payMethod+'</span>'+
+    '<span class="chip '+sc+'">'+sl+'</span>'+
+    (e.note?'<span class="chip">📝'+esc(e.note)+'</span>':'')+
+    '</div></div>'+
+    '<div class="entry-actions">'+
+    '<button class="act-btn act-edit" onclick="openEdit(\''+e.id+'\');event.stopPropagation()">✏️ 编辑</button>'+
+    '<button class="act-btn act-del" onclick="confirmDel(\''+e.id+'\');event.stopPropagation()">🗑 删除</button>'+
+    '</div></div></div>';
+}
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function cardClick(evt, id){
+  const card = document.getElementById('c-'+id);
+  if(!card) return;
+  if(swipedCard && swipedCard!==card){ swipedCard.classList.remove('swiped'); }
+  card.classList.toggle('swiped');
+  swipedCard = card.classList.contains('swiped') ? card : null;
+}
+
+function setStatus(btn){
+  activeStatus = btn.dataset.s;
+  document.querySelectorAll('#status-seg button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderList();
+}
+
+// ════════════════════════════════
+//  Sheet 表单
+// ════════════════════════════════
+function openAdd(){
+  document.getElementById('sheet-title').textContent='记一笔';
+  document.getElementById('edit-id').value='';
+  document.getElementById('f-name').value='';
+  document.getElementById('f-amount').value='';
+  document.getElementById('f-date').value=today();
+  document.getElementById('f-cat').value='主工程';
+  document.getElementById('f-status').value='已付';
+  document.getElementById('f-pay').value='微信支付';
+  document.getElementById('f-vendor').value='';
+  document.getElementById('f-note').value='';
+  openSheet();
+}
+
+function openEdit(id){
+  const e=getData().find(x=>x.id===id);
+  if(!e)return;
+  document.getElementById('sheet-title').textContent='编辑账目';
+  document.getElementById('edit-id').value=id;
+  document.getElementById('f-name').value=e.name;
+  document.getElementById('f-amount').value=e.amount;
+  document.getElementById('f-date').value=e.date;
+  document.getElementById('f-cat').value=e.cat;
+  document.getElementById('f-status').value=e.status;
+  document.getElementById('f-pay').value=e.payMethod;
+  document.getElementById('f-vendor').value=e.vendor||'';
+  document.getElementById('f-note').value=e.note||'';
+  openSheet();
+}
+
+function openSheet(){
+  const ol=document.getElementById('sheet-overlay');
+  ol.classList.add('open');
+  // 重置动画
+  const s=document.getElementById('sheet');
+  s.style.animation='none';
+  s.offsetHeight; // reflow
+  s.style.animation='';
+}
+
+function closeSheet(){
+  document.getElementById('sheet-overlay').classList.remove('open');
+}
+
+function saveEntry(){
+  const name=document.getElementById('f-name').value.trim();
+  const amount=parseFloat(document.getElementById('f-amount').value);
+  const date=document.getElementById('f-date').value;
+  if(!name){toast('请填写项目名称');return;}
+  if(isNaN(amount)||amount<=0){toast('请填写正确金额');return;}
+  if(!date){toast('请选择日期');return;}
+  const id=document.getElementById('edit-id').value;
+  const data=getData();
+  const entry={
+    id: id||String(Date.now()),
+    name, amount, date,
+    cat:document.getElementById('f-cat').value,
+    status:document.getElementById('f-status').value,
+    payMethod:document.getElementById('f-pay').value,
+    vendor:document.getElementById('f-vendor').value.trim(),
+    note:document.getElementById('f-note').value.trim()
+  };
+  if(id){
+    const idx=data.findIndex(x=>x.id===id);
+    if(idx!==-1) data[idx]=entry; else data.unshift(entry);
+  } else { data.unshift(entry); }
+  saveData(data);
+  closeSheet();
+  toast(id?'✓ 已更新':'✓ 已保存');
+  renderSummary(); renderCatStrip(); renderList();
+}
+
+async function confirmDel(id){
+  const ok = await myConfirm('确认删除这条记录？', true);
+  if(!ok) return;
+  saveData(getData().filter(x=>x.id!==id));
+  toast('已删除');
+  renderSummary(); renderCatStrip(); renderList();
+}
+
+// ════════════════════════════════
+//  页面切换
+// ════════════════════════════════
+function switchPage(btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  const pid=btn.dataset.page;
+  document.getElementById(pid).classList.add('active');
+  btn.classList.add('active');
+  document.getElementById('fab').style.display = pid==='page-list'?'':'none';
+  if(pid==='page-stats') renderStats();
+  if(pid==='page-data')  renderDataPage();
+}
+
+// ════════════════════════════════
+//  统计页
+// ════════════════════════════════
+function renderStats(){
+  const data=getData();
+  const total=data.reduce((s,e)=>s+Number(e.amount),0);
+  const paid =data.filter(e=>e.status==='已付').reduce((s,e)=>s+Number(e.amount),0);
+  const part =data.filter(e=>e.status==='部分付').reduce((s,e)=>s+Number(e.amount),0);
+  const unpd =data.filter(e=>e.status==='未付').reduce((s,e)=>s+Number(e.amount),0);
+  document.getElementById('stats-sub').textContent=data.length+' 条 · '+fmtShort(total);
+
+  const catOrder=['主工程','主材','家具','家电','软装','管理费','设计费','其他'];
+  const cats={};
+  data.forEach(e=>{ cats[e.cat]=(cats[e.cat]||0)+Number(e.amount); });
+  const maxCat=Math.max(...Object.values(cats),1);
+
+  const months={};
+  data.forEach(e=>{ const m=e.date.substring(0,7); months[m]=(months[m]||0)+Number(e.amount); });
+  const sortedM=Object.keys(months).sort();
+  const maxM=Math.max(...Object.values(months),1);
+
+  const pays={};
+  data.forEach(e=>{ pays[e.payMethod]=(pays[e.payMethod]||0)+Number(e.amount); });
+  const paysSorted=Object.entries(pays).sort((a,b)=>b[1]-a[1]);
+
+  const catBars = catOrder.filter(c=>cats[c]).map(c=>{
+    const pct=Math.round(cats[c]/total*100);
+    const bw=Math.round(cats[c]/maxCat*100);
+    return '<div class="cat-bar-row">'+
+      '<div class="cat-bar-label">'+
+      '<span class="cl"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:'+CAT_COLORS[c]+';margin-right:5px;vertical-align:middle"></span>'+c+'</span>'+
+      '<span class="cv">'+fmtAmt(cats[c])+' <span style="color:var(--ink3);font-weight:400">('+pct+'%)</span></span>'+
+      '</div><div class="bar-track"><div class="bar-fill" style="width:'+bw+'%"></div></div></div>';
+  }).join('');
+
+  const mBars = sortedM.map(m=>{
+    const h=Math.max(5,Math.round(months[m]/maxM*88));
+    const lbl=m.replace('2026-','').replace('-','/');
+    return '<div class="month-col"><div class="m-amt">'+fmtShort(months[m])+'</div><div class="m-bar" style="height:'+h+'px"></div><div class="m-lbl">'+lbl+'</div></div>';
+  }).join('');
+
+  const payRows = paysSorted.map(([k,v])=>
+    '<div class="pay-row"><span class="pay-name">'+k+'</span><div><div class="pay-amt">'+fmtAmt(v)+'</div><div class="pay-pct">'+Math.round(v/total*100)+'%</div></div></div>'
+  ).join('');
+
+  document.getElementById('stats-wrap').innerHTML =
+    '<div class="stat-card" style="text-align:center">'+
+    '<div class="big-total">'+fmtAmt(total)+'</div>'+
+    '<div class="big-total-lbl">TOTAL · '+data.length+' 笔账目</div>'+
+    '<div style="display:flex;gap:10px;margin-top:14px">'+
+    '<div style="flex:1;background:var(--paper2);border-radius:10px;padding:10px;text-align:center"><div style="font-size:10px;color:var(--ink3);margin-bottom:3px">已付清</div><div style="font-size:14px;font-weight:700;color:#2e7d52">'+fmtShort(paid)+'</div></div>'+
+    '<div style="flex:1;background:var(--paper2);border-radius:10px;padding:10px;text-align:center"><div style="font-size:10px;color:var(--ink3);margin-bottom:3px">部分付</div><div style="font-size:14px;font-weight:700;color:#92400e">'+fmtShort(part)+'</div></div>'+
+    '<div style="flex:1;background:var(--paper2);border-radius:10px;padding:10px;text-align:center"><div style="font-size:10px;color:var(--ink3);margin-bottom:3px">待付款</div><div style="font-size:14px;font-weight:700;color:var(--ink3)">'+fmtShort(unpd)+'</div></div>'+
+    '</div></div>'+
+    '<div class="stat-card"><div class="stat-card-title">分类占比</div>'+catBars+'</div>'+
+    '<div class="stat-card"><div class="stat-card-title">月度支出</div><div class="month-chart-inner">'+mBars+'</div></div>'+
+    '<div class="stat-card"><div class="stat-card-title">付款方式</div>'+payRows+'</div>';
+}
+
+// ════════════════════════════════
+//  数据管理页
+// ════════════════════════════════
+function renderDataPage(){
+  const data=getData();
+  const total=data.reduce((s,e)=>s+Number(e.amount),0);
+  const last=data.length?[...data].sort((a,b)=>b.date.localeCompare(a.date))[0].date:'—';
+  const storeLbl = USE_LS ? '本地 localStorage（已持久化）' : '内存（刷新后丢失，请及时导出）';
+  document.getElementById('data-page-wrap').innerHTML =
+    '<div class="data-section-title">数据概况</div>'+
+    '<div class="data-info-box">'+
+    '<div class="data-info-row"><span class="k">账目总数</span><span class="v">'+data.length+' 条</span></div>'+
+    '<div class="data-info-row"><span class="k">总金额</span><span class="v">'+fmtAmt(total)+'</span></div>'+
+    '<div class="data-info-row"><span class="k">最新记录</span><span class="v">'+last+'</span></div>'+
+    '<div class="data-info-row"><span class="k">存储状态</span><span class="v">'+storeLbl+'</span></div>'+
+    '</div>'+
+    (!USE_LS ? '<div style="background:#fef3c7;border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:12px;color:#92400e;line-height:1.6">⚠️ 当前浏览器不支持本地持久存储（file:// 协议限制）。<br>建议：通过「导出 JSON」将数据发送到备忘录，下次打开后重新导入。</div>' : '')+
+    '<div class="data-section-title">导出备份</div>'+
+    '<button class="io-btn primary" onclick="exportJSON()">📤 导出 JSON（复制到备忘录）</button>'+
+    '<div class="io-info">将账目数据生成 JSON 文本，复制后粘贴到备忘录/微信收藏保存。下次可通过「导入」恢复。</div>'+
+    '<div class="data-section-title">导入恢复</div>'+
+    '<button class="io-btn secondary" onclick="showImport()">📥 从文本导入 JSON</button>'+
+    '<div class="io-info">将之前复制保存的 JSON 文本粘贴进来，合并导入（相同 id 去重）。</div>'+
+    '<div class="data-section-title">重置 / 清空</div>'+
+    '<button class="io-btn danger" style="margin-bottom:9px" onclick="resetToSeed()">🔄 恢复初始 14 条历史数据</button>'+
+    '<button class="io-btn danger" onclick="clearAll()">🗑 清空全部账目</button>'+
+    '<div class="io-info">⚠️ 以上操作不可撤销，请先导出备份。</div>';
+}
+
+// ════════════════════════════════
+//  导出：生成文本弹窗（iOS 兼容）
+// ════════════════════════════════
+function exportJSON(){
+  const data=getData();
+  const payload={app:'装修账簿',exported_at:new Date().toISOString(),count:data.length,entries:data};
+  const text=JSON.stringify(payload,null,2);
+  document.getElementById('export-textarea').value=text;
+  document.getElementById('export-overlay').classList.add('open');
+}
+
+function copyExport(){
+  const ta=document.getElementById('export-textarea');
+  ta.select();
+  // iOS 需要用 execCommand
+  try {
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(ta.value).then(()=>toast('✓ 已复制到剪贴板')).catch(()=>fallbackCopy(ta));
+    } else {
+      fallbackCopy(ta);
+    }
+  } catch(e){ fallbackCopy(ta); }
+}
+
+function fallbackCopy(ta){
+  ta.setSelectionRange(0,99999);
+  document.execCommand('copy');
+  toast('✓ 已复制到剪贴板');
+}
+
+function closeExport(){
+  document.getElementById('export-overlay').classList.remove('open');
+}
+
+// ════════════════════════════════
+//  导入：弹出文本输入框
+// ════════════════════════════════
+let _importOverlay = null;
+function showImport(){
+  // 动态创建一次
+  if(!_importOverlay){
+    _importOverlay = document.createElement('div');
+    _importOverlay.className = 'export-overlay';
+    _importOverlay.id = 'import-overlay';
+    _importOverlay.innerHTML =
+      '<div class="export-box">'+
+      '<div class="export-title">📥 粘贴 JSON 数据</div>'+
+      '<div class="export-hint">将之前复制的 JSON 文本粘贴到下方文本框，点「导入」合并数据。</div>'+
+      '<textarea class="export-textarea" id="import-textarea" placeholder="在此粘贴 JSON 文本…"></textarea>'+
+      '<div class="export-actions">'+
+      '<button class="export-copy" onclick="doImport()">导入</button>'+
+      '<button class="export-close" onclick="closeImport()">取消</button>'+
+      '</div></div>';
+    document.body.appendChild(_importOverlay);
+  }
+  document.getElementById('import-textarea').value='';
+  _importOverlay.classList.add('open');
+}
+
+function closeImport(){
+  if(_importOverlay) _importOverlay.classList.remove('open');
+}
+
+function doImport(){
+  const text=(document.getElementById('import-textarea').value||'').trim();
+  if(!text){toast('请先粘贴 JSON 文本');return;}
+  try{
+    const parsed=JSON.parse(text);
+    const incoming=Array.isArray(parsed)?parsed:(parsed.entries||[]);
+    if(!incoming.length){toast('⚠ 未找到账目数据');return;}
+    const existing=getData();
+    const ids=new Set(existing.map(x=>x.id));
+    let added=0;
+    incoming.forEach(entry=>{
+      if(!ids.has(entry.id)){existing.push(entry);ids.add(entry.id);added++;}
+    });
+    saveData(existing);
+    toast('✓ 导入完成，新增 '+added+' 条');
+    closeImport();
+    renderSummary();renderCatStrip();renderList();renderDataPage();
+  }catch(e){
+    toast('⚠ JSON 格式错误，请检查文本');
+  }
+}
+
+async function resetToSeed(){
+  const ok=await myConfirm('确认恢复出厂数据？\n\n当前账目将被替换为内置的 14 条历史记录，无法撤销。\n\n建议先「导出」备份。',true);
+  if(!ok)return;
+  saveData(JSON.parse(JSON.stringify(SEED)));
+  toast('✓ 已恢复初始数据');
+  renderSummary();renderCatStrip();renderList();renderDataPage();
+}
+
+async function clearAll(){
+  const ok=await myConfirm('确认清空全部账目？\n\n操作不可撤销，建议先「导出」备份。',true);
+  if(!ok)return;
+  saveData([]);
+  toast('已清空');
+  renderSummary();renderCatStrip();renderList();renderDataPage();
+}
+
+// ════════════════════════════════
+//  工具函数
+// ════════════════════════════════
+function today(){return new Date().toISOString().split('T')[0]}
+
+let toastTimer;
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),2400);
+}
+
+// ════════════════════════════════
+//  点击关闭 sheet 和 swiped 卡片
+// ════════════════════════════════
+document.getElementById('sheet-overlay').addEventListener('click',function(e){
+  if(e.target===this) closeSheet();
+});
+document.addEventListener('click',function(e){
+  if(swipedCard&&!swipedCard.contains(e.target)){
+    swipedCard.classList.remove('swiped');swipedCard=null;
+  }
+});
+
+// ════════════════════════════════
+//  初始化
+// ════════════════════════════════
+(function(){
+  getData(); // 触发种子写入
+  renderSummary();
+  renderCatStrip();
+  renderList();
+})();
+</script>
+</body>
+</html>
